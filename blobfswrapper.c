@@ -328,6 +328,24 @@ blobfs_close_file(blobfs_file *file)
         return 0;
 }
 
+//int spdk_fs_delete_file(struct spdk_filesystem *fs, struct spdk_fs_thread_ctx *ctx,
+//			const char *name);
+int
+blobfs_delete_file(char *name)
+{
+        if (!check_fs_and_channel()) {
+                return ENOFS;
+        }
+        if (name == NULL)
+                return ENULLPTR;
+
+        int rc;
+        rc = spdk_fs_delete_file(g_fs, g_sync_channel, name);
+        if (rc != 0)
+                return EBLOBFS;
+
+        return 0;
+}
 
 
 int main(int argc, char **argv) {

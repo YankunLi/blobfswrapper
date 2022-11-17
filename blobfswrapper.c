@@ -293,6 +293,9 @@ blobfs_open_file(char *name, uint32_t flags, blobfs_file ** file) {
         if (name == NULL) {
                 return ENULLPTR;
         }
+        if (*file != NULL) {
+                return EARGS;
+        }
         if (allocate_blobfs_file(file) != 0) {
           return EMEM;
         }
@@ -304,6 +307,26 @@ blobfs_open_file(char *name, uint32_t flags, blobfs_file ** file) {
         return 0;
 }
 
+//int spdk_file_close(struct spdk_file *file, struct spdk_fs_thread_ctx *ctx);
+//
+int
+blobfs_close(blobfs_file *file)
+{
+        if (!check_fs_and_channel()) {
+                return ENOFS;
+        }
+        if (file == NULL) {
+                return ENULLPTR;
+        }
+        int rc;
+        rc = spdk_file_close(file->s_file, g_sync_channel);
+        if (rc != 0)
+                return EBLOBFS;
+
+        free_blobfs_file(file);
+
+        return 0;
+}
 
 
 int main(int argc, char **argv) {

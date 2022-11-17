@@ -221,6 +221,15 @@ unmount_blobfs(void)
         free_spdk_thread_ctx();
 }
 
+#define EBLOBFS -128
+#define ENOFS -129
+#define ENULLPTR -129
+#define EMEM -130
+
+typedef struct _blobfs_file {
+        struct spdk_file *s_file;
+} blobfs_file;
+
 static bool
 check_fs_and_channel()
 {
@@ -237,13 +246,64 @@ int
 blobfs_create_file(char *name)
 {
         if (!check_fs_and_channel())
-                return -1;
+                return ENOFS;
         if (name == NULL) {
-                return -1;
+                return ENULLPTR;
+        }
+        int rc;
+
+        rc = spdk_fs_create_file(g_fs, g_sync_channel, name);
+        if (rc != 0)
+                return EBLOBFS;
+
+        return 0;
+}
+
+static int
+allocate_blobfs_file(blobfs_file ** file)
+{
+        *file = (blobfs_file *) malloc(sizeof(blobfs_file));
+        if (*file == NULL) {
+                return ENULLPTR;
         }
 
-        return spdk_fs_create_file(g_fs, g_sync_channel, name);
+        return 0;
 }
+
+static void
+free_blobfs_file(blobfs_file *file)
+{
+        if (file != NULL) {
+                if (file->s_file != NULL) {
+                      free(file->s_file);
+                      file->s_file = NULL;
+                }
+                free(file);
+                file = NULL;
+        }
+}
+
+//int spdk_fs_open_file(struct spdk_filesystem *fs, struct spdk_fs_thread_ctx *ctx,
+//		      const char *name, uint32_t flags, struct spdk_file **file);
+int
+blobfs_open_file(char *name, uint32_t flags, blobfs_file ** file) {
+        if (!check_fs_and_channel()) {
+                return ENOFS;
+        }
+        if (name == NULL) {
+                return ENULLPTR;
+        }
+        if (allocate_blobfs_file(file) != 0) {
+          return EMEM;
+        }
+        int rc;
+        rc = spdk_fs_open_file(g_fs, g_sync_channel, name, flags, *file->s_file);
+        if (rc != 0)
+          return EBLOBFS;
+
+        return 0;
+}
+
 
 
 int main(int argc, char **argv) {

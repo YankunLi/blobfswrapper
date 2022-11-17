@@ -310,7 +310,7 @@ blobfs_open_file(char *name, uint32_t flags, blobfs_file ** file) {
 //int spdk_file_close(struct spdk_file *file, struct spdk_fs_thread_ctx *ctx);
 //
 int
-blobfs_close_file(blobfs_file *file)
+blobfs_file_close(blobfs_file *file)
 {
         if (!check_fs_and_channel()) {
                 return ENOFS;

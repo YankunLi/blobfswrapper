@@ -347,6 +347,25 @@ blobfs_delete_file(char *name)
         return 0;
 }
 
+//int spdk_fs_rename_file(struct spdk_filesystem *fs, struct spdk_fs_thread_ctx *ctx,
+//			const char *old_name, const char *new_name);
+
+int
+blobfs_rename_file(char *old_name, char *new_name)
+{
+        if (!check_fs_and_channel()) {
+                return ENOFS;
+        }
+        if (old_name == NULL || new_name == NULL)
+          return ENULLPTR;
+
+        int rc;
+        rc = spdk_fs_rename_file(g_fs, g_sync_channel, old_name, new_name);
+        if (rc != 0)
+                return EBLOBFS;
+
+        return 0;
+}
 
 int main(int argc, char **argv) {
   printf("hello blobfs wrapper!");

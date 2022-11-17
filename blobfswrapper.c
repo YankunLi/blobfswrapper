@@ -14,8 +14,8 @@
 
 struct spdk_filesystem *g_fs = NULL;
 struct spdk_bs_dev *g_bs_dev;
-thread_local struct spdk_fs_thread_ctx *g_sync_channel;
-//struct spdk_fs_thread_ctx *g_sync_channel;
+//thread_local struct spdk_fs_thread_ctx *g_sync_channel;
+struct spdk_fs_thread_ctx *g_sync_channel;
 uint32_t g_lcore = 0;
 char* g_bdev_name;
 pthread_t spdktid;
@@ -225,13 +225,10 @@ unmount_blobfs(void)
 #define ENOFS -129
 #define ENULLPTR -129
 #define EMEM -130
-
-typedef struct _blobfs_file {
-        struct spdk_file *s_file;
-} blobfs_file;
+#define EARGS -131
 
 static bool
-check_fs_and_channel()
+check_fs_and_channel(void)
 {
   if (g_fs == NULL || g_sync_channel == NULL) {
           return false;
@@ -286,7 +283,8 @@ free_blobfs_file(blobfs_file *file)
 //int spdk_fs_open_file(struct spdk_filesystem *fs, struct spdk_fs_thread_ctx *ctx,
 //		      const char *name, uint32_t flags, struct spdk_file **file);
 int
-blobfs_open_file(char *name, uint32_t flags, blobfs_file ** file) {
+blobfs_open_file(char *name, uint32_t flags, blobfs_file **file)
+{
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }
@@ -299,8 +297,9 @@ blobfs_open_file(char *name, uint32_t flags, blobfs_file ** file) {
         if (allocate_blobfs_file(file) != 0) {
           return EMEM;
         }
+        blobfs_file *b_file = (blobfs_file *)(*file);
         int rc;
-        rc = spdk_fs_open_file(g_fs, g_sync_channel, name, flags, *file->s_file);
+        rc = spdk_fs_open_file(g_fs, g_sync_channel, name, flags, &(b_file->s_file));
         if (rc != 0)
           return EBLOBFS;
 
@@ -425,7 +424,25 @@ blobfs_file_sync(blobfs_file *file)
 }
 
 int main(int argc, char **argv) {
-  printf("hello blobfs wrapper!");
+        printf("start blobfs wrapper!");
+	if (argc < 4) {
+		fprintf(stderr, "usage: %s <conffile> <bdev name> <cache_size_in_mb>\n", argv[0]);
+		exit(1);
+	}
 
-  return 0;
+        uint64_t cache_size = (uint64_t) atoi(argv[3]);
+        int rc;
+        rc = mount_blobfs(argv[1], argv[2], cache_size);
+        if (rc != 0) {
+                fprintf(stderr, "mount_blobfs conf(%s) bdev name(%s) cache size(%ld)\n", argv[1], argv[2], cache_size);
+                return rc;
+        }
+        fprintf(stdout, "blobfs mount successfully!!\n");
+
+        //do something for file
+        //
+        unmount_blobfs();
+        fprintf(stdout, "blobfs exit!!\n");
+
+        return 0;
 }

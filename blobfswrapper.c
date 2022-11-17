@@ -367,6 +367,25 @@ blobfs_rename_file(char *old_name, char *new_name)
         return 0;
 }
 
+//int spdk_file_write(struct spdk_file *file, struct spdk_fs_thread_ctx *ctx,
+//		    void *payload, uint64_t offset, uint64_t length);
+int
+blobfs_file_write(blobfs_file *file, void *payload, uint64_t offset, uint64_t length)
+{
+        if (!check_fs_and_channel()) {
+                return ENOFS;
+        }
+        if (file == NULL || file->s_file == NULL || payload == NULL)
+                return ENULLPTR;
+
+        int rc;
+        rc = spdk_file_write(file->s_file, g_sync_channel, payload, offset, length);
+        if (rc != 0)
+                return EBLOBFS;
+
+        return 0;
+}
+
 int main(int argc, char **argv) {
   printf("hello blobfs wrapper!");
 

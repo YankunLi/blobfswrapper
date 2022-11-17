@@ -10,10 +10,12 @@
 #include "spdk/thread.h"
 #include "spdk/bdev.h"
 
+#include "./blobfswrapper.h"
+
 struct spdk_filesystem *g_fs = NULL;
 struct spdk_bs_dev *g_bs_dev;
-//thread_local struct spdk_fs_thread_ctx *g_sync_channel;
-struct spdk_fs_thread_ctx *g_sync_channel;
+thread_local struct spdk_fs_thread_ctx *g_sync_channel;
+//struct spdk_fs_thread_ctx *g_sync_channel;
 uint32_t g_lcore = 0;
 char* g_bdev_name;
 pthread_t spdktid;
@@ -141,7 +143,10 @@ spdk_initialize_thread_ctx(void)
 int
 mount_blobfs(char* spdk_conf, char *spdk_dev_name, uint64_t cache_size_in_mb)
 {
-        struct spdk_app_opts *opts = (struct spdk_app_opts *)malloc(sizeof(struct spdk_app_opts));
+        struct spdk_app_opts *opts = (struct spdk_app_opts *) malloc(sizeof(struct spdk_app_opts));
+        if (opts == NULL) {
+                return -1;
+        }
 
         spdk_app_opts_init(opts, sizeof(*opts));
         opts->name = "blobfs";
@@ -166,7 +171,7 @@ mount_blobfs(char* spdk_conf, char *spdk_dev_name, uint64_t cache_size_in_mb)
 }
 
 
-static void
+__attribute__((unused)) static void
 set_channel(void)
 {
 	struct spdk_thread *thread;
@@ -178,11 +183,13 @@ set_channel(void)
 	}
 }
 
-void
+static void
 free_spdk_thread_ctx(void)
 {
-          if (g_sync_channel != NULL)
+          if (g_sync_channel != NULL) {
                   spdk_fs_free_thread_ctx(g_sync_channel);
+                  g_sync_channel = NULL;
+          }
 }
 
 
@@ -210,6 +217,8 @@ unmount_blobfs(void)
 
 	spdk_app_start_shutdown();
 	pthread_join(spdktid, NULL);
+
+        free_spdk_thread_ctx();
 }
 
 

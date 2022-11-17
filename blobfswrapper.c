@@ -405,6 +405,25 @@ blobfs_file_read(blobfs_file *file, void *payload, uint64_t offset, uint64_t len
         return 0;
 }
 
+//int spdk_file_sync(struct spdk_file *file, struct spdk_fs_thread_ctx *ctx);
+
+int
+blobfs_file_sync(blobfs_file *file)
+{
+        if (!check_fs_and_channel()) {
+                return ENOFS;
+        }
+        if (file == NULL)
+                return ENULLPTR;
+
+        int rc;
+        rc = spdk_file_sync(file->s_file, g_sync_channel);
+        if (rc != 0)
+                return EBLOBFS;
+
+        return 0;
+}
+
 int main(int argc, char **argv) {
   printf("hello blobfs wrapper!");
 

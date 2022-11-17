@@ -221,7 +221,29 @@ unmount_blobfs(void)
         free_spdk_thread_ctx();
 }
 
+static bool
+check_fs_and_channel()
+{
+  if (g_fs == NULL || g_sync_channel == NULL) {
+          return false;
+  }
 
+  return true;
+}
+
+//int spdk_fs_create_file(struct spdk_filesystem *fs, struct spdk_fs_thread_ctx *ctx,
+//			const char *name);
+int
+blobfs_create_file(char *name)
+{
+        if (!check_fs_and_channel())
+                return -1;
+        if (name == NULL) {
+                return -1;
+        }
+
+        return spdk_fs_create_file(g_fs, g_sync_channel, name);
+}
 
 
 int main(int argc, char **argv) {

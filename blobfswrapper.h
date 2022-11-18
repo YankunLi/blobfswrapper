@@ -19,6 +19,6 @@ int blobfs_rename_file(char *old_name, char *new_name);
 
 int blobfs_file_write(blobfs_file *file, void *payload, uint64_t offset, uint64_t length);
 
-int blobfs_file_read(blobfs_file *file, void *payload, uint64_t offset, uint64_t length);
+int64_t blobfs_file_read(blobfs_file *file, void *payload, uint64_t offset, uint64_t length);
 
 int blobfs_file_sync(blobfs_file *file);

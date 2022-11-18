@@ -387,7 +387,7 @@ blobfs_file_write(blobfs_file *file, void *payload, uint64_t offset, uint64_t le
 
 //int64_t spdk_file_read(struct spdk_file *file, struct spdk_fs_thread_ctx *ctx,
 //		       void *payload, uint64_t offset, uint64_t length);
-int
+int64_t
 blobfs_file_read(blobfs_file *file, void *payload, uint64_t offset, uint64_t length)
 {
         if (!check_fs_and_channel()) {
@@ -396,12 +396,12 @@ blobfs_file_read(blobfs_file *file, void *payload, uint64_t offset, uint64_t len
         if (file == NULL || file->s_file == NULL || payload == NULL)
                 return ENULLPTR;
 
-        int rc;
-        rc = spdk_file_read(file->s_file, g_sync_channel, payload, offset, length);
-        if (rc != 0)
+        int64_t end_offset;
+        end_offset = spdk_file_read(file->s_file, g_sync_channel, payload, offset, length);
+        if (end_offset < 0)
                 return EBLOBFS;
 
-        return 0;
+        return end_offset;
 }
 
 //int spdk_file_sync(struct spdk_file *file, struct spdk_fs_thread_ctx *ctx);
@@ -438,63 +438,70 @@ int main(int argc, char **argv) {
                 return rc;
         }
         fprintf(stdout, "blobfs mount successfully!!\n");
-        char *filename = "blobfsfile-test";
+        char *filename = "blobfs-test";
        // rc = blobfs_create_file(filename);
        // if (rc != 0) {
        //         fprintf(stderr, "ERR: blobfs create file %s", filename);
        //         goto exit;
        // }
 
-       // blobfs_file *wfile = NULL;
+       blobfs_file *wfile = NULL;
 
-       // rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &wfile);
-       // if (rc != 0) {
-       //         fprintf(stderr, "ERR: blobfs open file %s rc %d\n", filename, rc);
-       //         goto exit;
-       // }
+       rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &wfile);
+       if (rc != 0) {
+               fprintf(stderr, "ERR: blobfs open file %s rc %d\n", filename, rc);
+               goto exit;
+       }
 
-       // rc = blobfs_file_write(wfile, "hello world", 60, 12);
-       // if (rc != 0) {
-       //         fprintf(stderr, "ERR: blobfs write file %s\n", filename);
-       //         goto exit;
-       // }
+       rc = blobfs_file_write(wfile, "hello world", 0, 12);
+       if (rc != 0) {
+               fprintf(stderr, "ERR: blobfs write file %s\n", filename);
+               goto close_wfile;
+       }
 
-      //  rc = blobfs_file_sync(file);
-      //  if (rc != 0) {
-      //          fprintf(stderr, "ERR: blobfs sync file %s\n", filename);
-      //          goto exit;
-      //  }
+      rc = blobfs_file_sync(wfile);
+      if (rc != 0) {
+              fprintf(stderr, "ERR: blobfs sync file %s\n", filename);
+              goto close_wfile;
+      }
 
         blobfs_file *rfile = NULL;
 
         rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &rfile);
         if (rc != 0) {
                 fprintf(stderr, "ERR: blobfs open file %s rc %d\n", filename, rc);
-                goto exit;
+                goto close_wfile;
         }
 
-        char data[12];
-        rc = blobfs_file_read(rfile, data, 0, 12);
-        if (rc != 0) {
-                fprintf(stderr, "ERR: blobfs read file %s rc %d\n", filename, rc);
-                goto exit;
-        }
-        fprintf(stdout, "blobfs read data(%s) from %s\n", data, filename);
+//        void *data = malloc(12);
+//        int64_t end_off;
+//        end_off = blobfs_file_read(rfile, data, 0, 12);
+//        if (end_off < 0) {
+//                fprintf(stderr, "ERR: blobfs read file %s rc %d\n", filename, rc);
+//                goto close_file;
+//        }
+//        fprintf(stdout, "blobfs read data[ %s ] from %s\n", (char *)data, filename);
 
-        //rc = blobfs_file_close(wfile);
-        //if (rc != 0) {
-        //        fprintf(stderr, "ERR: blobfs close write file %s\n", filename);
-        //        goto exit;
-        //}
-
+close_file:
         rc = blobfs_file_close(rfile);
         if (rc != 0) {
                 fprintf(stderr, "ERR: blobfs close read file %s\n", filename);
                 goto exit;
         }
+close_wfile:
+        rc = blobfs_file_close(wfile);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs close write file %s\n", filename);
+                goto exit;
+        }
         //do something for file
         //
         //
+        rc = blobfs_delete_file(filename);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs delete file %s\n", filename);
+                goto exit;
+        }
 exit:
         unmount_blobfs();
         fprintf(stdout, "blobfs exit!!\n");

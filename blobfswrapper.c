@@ -506,35 +506,36 @@ int main(int argc, char **argv) {
                 }
         }
 
-       blobfs_file *wfile = NULL;
+        blobfs_file *wfile = NULL;
 
-       fprintf(stdout, "blobfs: to open file %s for write\n", filename);
-       rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &wfile);
-       if (rc != 0) {
-               fprintf(stderr, "ERR: blobfs open file %s rc %d\n", filename, rc);
-               goto exit;
-       }
+        fprintf(stdout, "blobfs: to open file %s for write\n", filename);
+        rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &wfile);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs open file %s rc %d\n", filename, rc);
+                goto exit;
+        }
 
-       fprintf(stdout, "blobfs: to write data to file %s\n", filename);
-       rc = blobfs_file_write(wfile, "hello world", file_stat->s_size, 12);
-       if (rc != 0) {
-               fprintf(stderr, "ERR: blobfs write file %s\n", filename);
-               goto close_wfile;
-       }
+        fprintf(stdout, "blobfs: to write data to file %s\n", filename);
+        rc = blobfs_file_write(wfile, "hello world", file_stat->s_size, 12);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs write file %s\n", filename);
+                goto close_wfile;
+        }
+        file_stat->s_size += 12;
 
-       fprintf(stdout, "blobfs: to sync file %s\n", filename);
-      rc = blobfs_file_sync(wfile);
-      if (rc != 0) {
-              fprintf(stderr, "ERR: blobfs sync file %s\n", filename);
-              goto close_wfile;
-      }
+        fprintf(stdout, "blobfs: to sync file %s\n", filename);
+        rc = blobfs_file_sync(wfile);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs sync file %s\n", filename);
+                goto close_wfile;
+        }
 
-      fprintf(stdout, "blobfs: to sync file %s again\n", filename);
-      rc = blobfs_file_sync(wfile);
-      if (rc != 0) {
-              fprintf(stderr, "ERR: blobfs sync file %s\n", filename);
-              goto close_wfile;
-      }
+        fprintf(stdout, "blobfs: to sync file %s again\n", filename);
+        rc = blobfs_file_sync(wfile);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs sync file %s\n", filename);
+                goto close_wfile;
+        }
 
         blobfs_file *rfile = NULL;
 
@@ -547,7 +548,7 @@ int main(int argc, char **argv) {
 
         void *data = malloc(file_stat->s_size);
         int64_t end_off;
-        end_off = blobfs_file_read(rfile, data, 0, file_stat->s_size+12);
+        end_off = blobfs_file_read(rfile, data, 0, file_stat->s_size);
         if (end_off < 0) {
                 fprintf(stderr, "ERR: blobfs read file %s rc %d\n", filename, rc);
                 goto close_file;

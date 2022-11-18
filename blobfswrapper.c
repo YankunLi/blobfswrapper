@@ -536,29 +536,32 @@ int main(int argc, char **argv) {
               goto close_wfile;
       }
 
-        //blobfs_file *rfile = NULL;
+        blobfs_file *rfile = NULL;
 
-        //rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &rfile);
-        //if (rc != 0) {
-        //        fprintf(stderr, "ERR: blobfs open file %s rc %d\n", filename, rc);
-        //        goto close_wfile;
-        //}
+        fprintf(stdout, "blobfs: to open file %s for read\n", filename);
+        rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &rfile);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs open file %s rc %d\n", filename, rc);
+                goto close_wfile;
+        }
 
-//        void *data = malloc(12);
-//        int64_t end_off;
-//        end_off = blobfs_file_read(rfile, data, 0, 12);
-//        if (end_off < 0) {
-//                fprintf(stderr, "ERR: blobfs read file %s rc %d\n", filename, rc);
-//                goto close_file;
-//        }
-//        fprintf(stdout, "blobfs read data[ %s ] from %s\n", (char *)data, filename);
+        void *data = malloc(file_stat->s_size);
+        int64_t end_off;
+        end_off = blobfs_file_read(rfile, data, 0, file_stat->s_size+12);
+        if (end_off < 0) {
+                fprintf(stderr, "ERR: blobfs read file %s rc %d\n", filename, rc);
+                goto close_file;
+        }
+        fprintf(stdout, "blobfs read data[ %s ] from %s\n", ((char *)data), filename);
 
-//close_file:
-        //rc = blobfs_file_close(rfile);
-        //if (rc != 0) {
-        //        fprintf(stderr, "ERR: blobfs close read file %s\n", filename);
-        //        goto exit;
-        //}
+close_file:
+        fprintf(stdout, "blobfs: to close file %s for read\n", filename);
+        rc = blobfs_file_close(rfile);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs close read file %s\n", filename);
+                goto exit;
+        }
+        rfile = NULL;
 close_wfile:
         fprintf(stdout, "blobfs: to close file %s for write\n", filename);
         rc = blobfs_file_close(wfile);
@@ -582,6 +585,8 @@ close_wfile:
                 goto exit;
         }
 exit:
+        free_blobfs_file_stat(file_stat);
+        file_stat = NULL;
         unmount_blobfs();
         fprintf(stdout, "blobfs exit!!\n");
 

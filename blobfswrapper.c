@@ -438,9 +438,64 @@ int main(int argc, char **argv) {
                 return rc;
         }
         fprintf(stdout, "blobfs mount successfully!!\n");
+        char *filename = "blobfsfile-test";
+       // rc = blobfs_create_file(filename);
+       // if (rc != 0) {
+       //         fprintf(stderr, "ERR: blobfs create file %s", filename);
+       //         goto exit;
+       // }
 
+       // blobfs_file *wfile = NULL;
+
+       // rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &wfile);
+       // if (rc != 0) {
+       //         fprintf(stderr, "ERR: blobfs open file %s rc %d\n", filename, rc);
+       //         goto exit;
+       // }
+
+       // rc = blobfs_file_write(wfile, "hello world", 60, 12);
+       // if (rc != 0) {
+       //         fprintf(stderr, "ERR: blobfs write file %s\n", filename);
+       //         goto exit;
+       // }
+
+      //  rc = blobfs_file_sync(file);
+      //  if (rc != 0) {
+      //          fprintf(stderr, "ERR: blobfs sync file %s\n", filename);
+      //          goto exit;
+      //  }
+
+        blobfs_file *rfile = NULL;
+
+        rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &rfile);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs open file %s rc %d\n", filename, rc);
+                goto exit;
+        }
+
+        char data[12];
+        rc = blobfs_file_read(rfile, data, 0, 12);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs read file %s rc %d\n", filename, rc);
+                goto exit;
+        }
+        fprintf(stdout, "blobfs read data(%s) from %s\n", data, filename);
+
+        //rc = blobfs_file_close(wfile);
+        //if (rc != 0) {
+        //        fprintf(stderr, "ERR: blobfs close write file %s\n", filename);
+        //        goto exit;
+        //}
+
+        rc = blobfs_file_close(rfile);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs close read file %s\n", filename);
+                goto exit;
+        }
         //do something for file
         //
+        //
+exit:
         unmount_blobfs();
         fprintf(stdout, "blobfs exit!!\n");
 

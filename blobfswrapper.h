@@ -5,6 +5,7 @@ typedef struct _blobfs_file {
 
 typedef struct _blobfs_file_stat {
         struct spdk_file_stat *s_stat;
+        uint64_t s_size;
 } blobfs_file_stat;
 
 int mount_blobfs(char* spdk_conf, char *spdk_dev_name, uint64_t cache_size_in_mb);

@@ -423,6 +423,49 @@ blobfs_file_sync(blobfs_file *file)
         return 0;
 }
 
+int
+allocate_blobfs_file_stat(blobfs_file_stat **stat)
+{
+        *stat = (blobfs_file_stat *) malloc(sizeof(blobfs_file_stat));
+        if (*stat == NULL) {
+                return EMEM;
+        }
+        (*stat)->s_stat = (struct spdk_file_stat *) malloc(sizeof(struct spdk_file_stat));
+        if ((*stat)->s_stat == NULL) {
+                free(stat);
+                return EMEM;
+        }
+
+        return 0;
+}
+
+void free_blobfs_file_stat(blobfs_file_stat *stat)
+{
+        if (stat == NULL)
+                return;
+
+        if (stat->s_stat != NULL)
+                free(stat->s_stat);
+        free(stat);
+}
+
+//int spdk_fs_file_stat(struct spdk_filesystem *fs, struct spdk_fs_thread_ctx *ctx,
+//		      const char *name, struct spdk_file_stat *stat);
+int blobfs_file_stat_f(char *name, blobfs_file_stat *stat)
+{
+        if (!check_fs_and_channel()) {
+                return ENOFS;
+        }
+        if (name == NULL)
+                return ENULLPTR;
+        int rc;
+        rc = spdk_fs_file_stat(g_fs, g_sync_channel, name, stat->s_stat);
+        if (rc != 0)
+                return EBLOBFS;
+
+        return 0;
+}
+
 int main(int argc, char **argv) {
         printf("start blobfs wrapper!");
 	if (argc < 4) {

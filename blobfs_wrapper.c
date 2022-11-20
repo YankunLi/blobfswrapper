@@ -469,6 +469,23 @@ int blobfs_file_stat_f(char *name, blobfs_file_stat *stat)
 
 //int spdk_file_truncate(struct spdk_file *file, struct spdk_fs_thread_ctx *ctx,
 ////		       uint64_t length);
+int
+blobfs_file_truncate(struct spdk_file *file, uint64_t length)
+{
+        if (!check_fs_and_channel()) {
+                return ENOFS;
+        }
+        if (file == NULL) {
+                return ENULLPTR;
+        }
+        int rc;
+        rc = spdk_file_truncate(file, g_sync_channel, length);
+        if (rc != 0) {
+                return EBLOBFS;
+        }
+
+        return 0;
+}
 //const char *spdk_file_get_name(struct spdk_file *file);
 //
 //uint64_t spdk_file_get_length(struct spdk_file *file);

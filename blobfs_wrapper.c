@@ -491,6 +491,24 @@ blobfs_file_truncate(blobfs_file *file, uint64_t length)
 }
 
 //const char *spdk_file_get_name(struct spdk_file *file);
+
+char *
+blobfs_file_get_name(blobfs_file *file)
+{
+        if (!check_fs_and_channel()) {
+                return ENOFS;
+        }
+        if (file == NULL) {
+                return ENULLPTR;
+        }
+        if (file->s_file == NULL) {
+                return ENULLPTR;
+        }
+        char *file_name;
+        file_name = spdk_file_get_name(file->s_file);
+
+        return file_name;
+}
 //
 //uint64_t spdk_file_get_length(struct spdk_file *file);
 //int spdk_file_get_id(struct spdk_file *file, void *id, size_t size);

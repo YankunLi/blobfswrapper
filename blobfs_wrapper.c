@@ -525,3 +525,21 @@ blobfs_file_get_length(blobfs_file *file)
 }
 
 //int spdk_file_get_id(struct spdk_file *file, void *id, size_t size);
+
+int
+blobfs_file_get_id(blobfs_file *file, void *id, size_t size)
+{
+        if (file == NULL || id == NULL) {
+                return ENULLPTR;
+        }
+        if (file->s_file == NULL) {
+                return ENULLPTR;
+        }
+        int rc;
+        rc = spdk_file_get_id(file->s_file, id, size);
+        if (rc != 0) {
+                return EBLOBFS;
+        }
+
+        return 0;
+}

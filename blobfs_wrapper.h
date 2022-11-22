@@ -49,6 +49,10 @@ void free_blobfs_file_stat(blobfs_file_stat *stat);
 
 int blobfs_file_truncate(blobfs_file *file, uint64_t length);
 
-char * blobfs_file_get_name(blobfs_file *file);
+const char * blobfs_file_get_name(blobfs_file *file);
+
+uint64_t blobfs_file_get_length(blobfs_file *file);
+
+int blobfs_file_get_id(blobfs_file *file, void *id, size_t size);
 
 #endif

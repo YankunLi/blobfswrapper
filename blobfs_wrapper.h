@@ -21,6 +21,15 @@ typedef struct _blobfs_file_stat {
         uint64_t s_size;
 } blobfs_file_stat;
 
+#define FILE_NAME_MAX_LENGTH 128
+
+typedef struct _blobfs_file_name {
+        char name[FILE_NAME_MAX_LENGTH];
+        struct _blobfs_file_name *next;
+} blobfs_file_name;
+
+typedef blobfs_file_name* blobfs_file_name_ptr;
+
 int mount_blobfs(char* spdk_conf, char *spdk_dev_name, uint64_t cache_size_in_mb);
 
 void unmount_blobfs(void);
@@ -54,5 +63,9 @@ const char * blobfs_file_get_name(blobfs_file *file);
 uint64_t blobfs_file_get_length(blobfs_file *file);
 
 int blobfs_file_get_id(blobfs_file *file, void *id, size_t size);
+
+blobfs_file_name * allocate_file_name();
+
+void free_blobfs_file_name(blobfs_file_name_ptr list);
 
 #endif

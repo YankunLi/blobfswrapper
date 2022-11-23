@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <malloc.h>
+#include <string.h>
 
 #include "spdk/env.h"
 #include "spdk/event.h"
@@ -225,6 +226,36 @@ unmount_blobfs(void)
 
         free_spdk_thread_ctx();
 }
+
+blobfs_file_name *
+allocate_file_name()
+{
+        blobfs_file_name_ptr name_ptr;
+        name_ptr = (blobfs_file_name_ptr) malloc(sizeof(blobfs_file_name));
+        if (name_ptr == NULL) {
+                return NULL;
+        }
+        name_ptr->next = NULL;
+        memset(name_ptr, '\0', FILE_NAME_MAX_LENGTH);
+
+        return name_ptr;
+}
+
+void
+free_blobfs_file_name(blobfs_file_name_ptr list)
+{
+        blobfs_file_name_ptr iter = list;
+        blobfs_file_name_ptr tmp;
+        if (list == NULL) {
+                return;
+        }
+        while(iter) {
+                tmp = iter;
+                iter = iter->next;
+                free(tmp);
+        }
+}
+
 
 static bool
 check_fs_and_channel(void)
@@ -542,4 +573,30 @@ blobfs_file_get_id(blobfs_file *file, void *id, size_t size)
         }
 
         return 0;
+}
+
+
+int
+blobfs_list_all_files(blobfs_file_name_ptr *list)
+{
+        if (!check_fs_and_channel()) {
+                return ENOFS;
+        }
+
+        blobfs_file_name_ptr *it = list;
+        blobfs_file_name *tmp_name;
+
+	spdk_fs_iter iter;
+	struct spdk_file *file;
+        const char * raw_file_name;
+	iter = spdk_fs_iter_first(g_fs);
+	while (iter != NULL) {
+		file = spdk_fs_iter_get_file(iter);
+                raw_file_name = spdk_file_get_name(file);
+                tmp_name = allocate_file_name();
+                strncpy(tmp_name->name, raw_file_name, strlen(raw_file_name));
+                *it = tmp_name;
+                it = &(tmp_name->next);
+		iter = spdk_fs_iter_next(iter);
+	}
 }

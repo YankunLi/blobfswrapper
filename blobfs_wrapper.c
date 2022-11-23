@@ -599,4 +599,6 @@ blobfs_list_all_files(blobfs_file_name_ptr *list)
                 it = &(tmp_name->next);
 		iter = spdk_fs_iter_next(iter);
 	}
+
+        return 0;
 }

@@ -68,4 +68,6 @@ blobfs_file_name * allocate_file_name();
 
 void free_blobfs_file_name(blobfs_file_name_ptr list);
 
+int blobfs_list_all_files(blobfs_file_name_ptr *list);
+
 #endif

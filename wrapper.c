@@ -113,9 +113,25 @@ close_wfile:
                 fprintf(stderr, "ERR: blobfs close write file %s\n", filename);
                 goto exit;
         }
+        fprintf(stdout, "blobfs: to list all files \n");
+        blobfs_file_name *list = NULL;
+        rc = blobfs_list_all_files(&list);
+        if (rc != 0) {
+                fprintf(stderr, "ERR: blobfs list all file \n");
+                goto clean;
+        }
+        blobfs_file_name_ptr it = list;
+        fprintf(stdout, "blobfs: files: ");
+        while(it != NULL) {
+                fprintf(stdout, "%s ", it->name);
+                it = it->next;
+        }
+        free_blobfs_file_name(list);
+        fprintf(stdout, "\n");
         //do something for file
         //
         //
+clean:
         rc = blobfs_delete_file(filename);
         if (rc != 0) {
                 fprintf(stderr, "ERR: blobfs delete file %s\n", filename);
@@ -125,7 +141,7 @@ exit:
         free_blobfs_file_stat(file_stat);
         file_stat = NULL;
         unmount_blobfs();
-        fprintf(stdout, "blobfs exit!!\n");
+        fprintf(stdout, "blobfs: exit!!\n");
 
         return 0;
 }

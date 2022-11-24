@@ -118,21 +118,25 @@ close_wfile:
                 fprintf(stderr, "ERR: blobfs close write file %s\n", filename);
                 goto exit;
         }
-        fprintf(stdout, "blobfs: to list all files \n");
-        blobfs_file_name *all_files = NULL;
-        rc = blobfs_list_all_files(&all_files);
-        if (rc != 0) {
-                fprintf(stderr, "ERR: blobfs list all file \n");
-                goto clean;
+        int times = 90;
+        while (times) {
+                fprintf(stdout, "blobfs: to list all files \n");
+                blobfs_file_name *all_files = NULL;
+                rc = blobfs_list_all_files(&all_files);
+                if (rc != 0) {
+                        fprintf(stderr, "ERR: blobfs list all file \n");
+                        goto clean;
+                }
+                blobfs_file_name_ptr it = all_files;
+                fprintf(stdout, "blobfs: files: ");
+                while(it != NULL) {
+                        fprintf(stdout, "%s ", it->name);
+                        it = it->next;
+                }
+                free_blobfs_file_name(all_files);
+                fprintf(stdout, "\n");
+                times--;
         }
-        blobfs_file_name_ptr it = all_files;
-        fprintf(stdout, "blobfs: files: ");
-        while(it != NULL) {
-                fprintf(stdout, "%s ", it->name);
-                it = it->next;
-        }
-        free_blobfs_file_name(all_files);
-        fprintf(stdout, "\n");
         //do something for file
         //
         //

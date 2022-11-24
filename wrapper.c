@@ -89,9 +89,14 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "ERR: blobfs read file %s rc %d\n", filename, rc);
                 goto close_file;
         }
-        fprintf(stdout, "blobfs read data[ %s ] from %s\n", ((char *)data), filename);
+        fprintf(stdout, "blobfs: read data[ %s ] from %s\n", ((char *)data), filename);
 
+        fprintf(stdout, "blobfs: call get file %s id\n", filename) ;
+        void *id = malloc(8);
+        size_t id_length = blobfs_file_get_id(rfile, id, 8);
+        fprintf(stdout, "blobfs: get file %s id is %s\n", filename, (char *)id);
 close_file:
+
         fprintf(stdout, "blobfs: to close file %s for read\n", filename);
         rc = blobfs_file_close(rfile);
         if (rc != 0) {
@@ -114,19 +119,19 @@ close_wfile:
                 goto exit;
         }
         fprintf(stdout, "blobfs: to list all files \n");
-        blobfs_file_name *list = NULL;
-        rc = blobfs_list_all_files(&list);
+        blobfs_file_name *all_files = NULL;
+        rc = blobfs_list_all_files(&all_files);
         if (rc != 0) {
                 fprintf(stderr, "ERR: blobfs list all file \n");
                 goto clean;
         }
-        blobfs_file_name_ptr it = list;
+        blobfs_file_name_ptr it = all_files;
         fprintf(stdout, "blobfs: files: ");
         while(it != NULL) {
                 fprintf(stdout, "%s ", it->name);
                 it = it->next;
         }
-        free_blobfs_file_name(list);
+        free_blobfs_file_name(all_files);
         fprintf(stdout, "\n");
         //do something for file
         //

@@ -21,7 +21,7 @@
 struct spdk_filesystem *g_fs = NULL;
 struct spdk_bs_dev *g_bs_dev;
 //thread_local struct spdk_fs_thread_ctx *g_sync_channel;
-struct spdk_fs_thread_ctx *g_sync_channel;
+__thread struct spdk_fs_thread_ctx *g_sync_channel;
 uint32_t g_lcore = 0;
 char* g_bdev_name;
 pthread_t spdktid;

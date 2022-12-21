@@ -4,8 +4,12 @@
 
 #include <stdio.h>
 #include <blobfs_wrapper.h>
+#include <sys/timeb.h>
+
+#define GB 1024*1024*1024L
 
 int main(int argc, char **argv) {
+	struct timeb startTime , endTime;
         printf("start blobfs wrapper!");
 	if (argc < 4) {
 		fprintf(stderr, "usage: %s <conffile> <bdev name> <cache_size_in_mb>\n", argv[0]);
@@ -20,6 +24,103 @@ int main(int argc, char **argv) {
                 return rc;
         }
         fprintf(stdout, "blobfs mount successfully!!\n");
+
+	ftime(&startTime);
+	if (strcmp(argv[4], "create") == 0) {
+		char *name = (char *) malloc(125);
+		char *prefix =  "testfilename-";
+		int idx = 0;
+		for (idx = 0; idx < 10000; idx++) {
+			sprintf(name, "%s%d", prefix, idx);
+			rc = blobfs_create_file(name);
+			if (rc != 0) {
+				fprintf(stderr, "ERR: blobfs bentch create file %s\n", name);
+				goto createout;
+			}
+		}
+createout:
+	        ftime(&endTime);
+		free(name);
+	        fprintf(stdout, "create 10000 file escaped: %d ms\n", (endTime.time-startTime.time)*1000 + (endTime.millitm - startTime.millitm));
+                unmount_blobfs();
+		exit(0);
+	}
+
+	ftime(&startTime);
+	if (strcmp(argv[4], "del") == 0) {
+                char *name = (char *) malloc(125);
+                char *prefix =  "testfilename-";
+                int idx = 0;
+                for (idx = 0; idx < 10000; idx++) {
+                        sprintf(name, "%s%d", prefix, idx);
+			rc = blobfs_delete_file(name);
+                        if (rc != 0) {
+                                fprintf(stderr, "ERR: blobfs bentch create file %s\n", name);
+				goto delout;
+                        }
+                }
+delout:
+                ftime(&endTime);
+		free(name);
+                fprintf(stdout, "del 10000 file escaped: %d ms\n", (endTime.time-startTime.time)*1000 + (endTime.millitm - startTime.millitm));
+                unmount_blobfs();
+                exit(0);
+        }
+
+	static const int size = 1024*64;
+
+	ftime(&startTime);
+	if (strcmp(argv[4], "write") == 0) {
+                blobfs_file *wfile = NULL;
+		char *filename = "write_data";
+		char data[size];
+                rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &wfile);
+                if (rc != 0) {
+			fprintf(stderr, "ERR: blobfs open file %s\n", filename);
+			goto writeout;
+		}
+
+		int i;
+		for (i = 0; i < size; i++) {
+			data[i] = '1';
+		}
+
+		long int total;
+		for (total = 0; total < 1 * GB;) {
+                        rc = blobfs_file_write(wfile, data, total, size);
+                        if (rc != 0) {
+                                fprintf(stderr, "ERR: blobfs write file %s\n", filename);
+				goto writeout;
+                        }
+			total += size;
+                        rc = blobfs_file_sync(wfile);
+                        if (rc != 0) {
+                                fprintf(stderr, "ERR: blobfs sync file %s\n", filename);
+				goto writeout;
+			}
+		}
+                rc = blobfs_file_close(wfile);
+                if (rc != 0) {
+                        fprintf(stderr, "ERR: blobfs close read file %s\n", filename);
+			goto writeout;
+                }
+writeout:
+                ftime(&endTime);
+                fprintf(stdout, "write 10GB file escaped: %d ms\n", (endTime.time-startTime.time)*1000 + (endTime.millitm - startTime.millitm));
+                unmount_blobfs();
+                exit(0);
+	}
+
+	if (strcmp(argv[4], "clear") == 0) {
+        rc = blobfs_delete_file(argv[5]);
+                if (rc != 0) {
+                        fprintf(stderr, "ERR: blobfs delete file %s\n", argv[5]);
+			exit(-1);
+                }
+                unmount_blobfs();
+                exit(0);
+	}
+
 
         char *filename = "blobfs-test";
         blobfs_file_stat *file_stat;
@@ -41,6 +142,7 @@ int main(int argc, char **argv) {
                   goto exit;
                 }
         }
+
 
         blobfs_file *wfile = NULL;
 
@@ -118,6 +220,8 @@ close_wfile:
                 fprintf(stderr, "ERR: blobfs close write file %s\n", filename);
                 goto exit;
         }
+	ftime(&endTime);
+	fprintf(stdout, "%d ms\n", (endTime.time-startTime.time)*1000 + (endTime.millitm - startTime.millitm));
         int times = 9;
         while (times) {
                 fprintf(stdout, "blobfs: to list all files \n");
@@ -149,6 +253,8 @@ clean:
 exit:
         free_blobfs_file_stat(file_stat);
         file_stat = NULL;
+	ftime(&endTime);
+	fprintf(stdout, "%d ms\n", (endTime.time-startTime.time)*1000 + (endTime.millitm - startTime.millitm));
         unmount_blobfs();
         fprintf(stdout, "blobfs: exit!!\n");
 

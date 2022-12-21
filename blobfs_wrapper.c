@@ -18,6 +18,7 @@
 
 #include "blobfs_wrapper.h"
 
+struct spdk_thread *thread;
 struct spdk_filesystem *g_fs = NULL;
 struct spdk_bs_dev *g_bs_dev;
 //thread_local struct spdk_fs_thread_ctx *g_sync_channel;
@@ -134,7 +135,6 @@ initialize_spdk(void *arg)
 static void
 spdk_initialize_thread_ctx(void)
 {
-	struct spdk_thread *thread;
 
 	if (g_fs != NULL) {
 		if (g_sync_channel) {
@@ -222,6 +222,7 @@ unmount_blobfs(void)
 	}
 
 	spdk_app_start_shutdown();
+	spdk_thread_exit(thread);
 	pthread_join(spdktid, NULL);
 
         free_spdk_thread_ctx();

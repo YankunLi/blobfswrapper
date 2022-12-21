@@ -118,7 +118,7 @@ close_wfile:
                 fprintf(stderr, "ERR: blobfs close write file %s\n", filename);
                 goto exit;
         }
-        int times = 90;
+        int times = 9;
         while (times) {
                 fprintf(stdout, "blobfs: to list all files \n");
                 blobfs_file_name *all_files = NULL;

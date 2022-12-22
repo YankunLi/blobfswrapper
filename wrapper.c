@@ -67,7 +67,7 @@ delout:
                 exit(0);
         }
 
-	static const int size = 1024*64;
+	static const int size = 1024*4;
 
 	ftime(&startTime);
 	if (strcmp(argv[4], "write") == 0) {
@@ -85,8 +85,8 @@ delout:
 			data[i] = '1';
 		}
 
-		long int total;
-		for (total = 0; total < 1 * GB;) {
+		long long int total;
+		for (total = 0; total < 10 * GB;) {
                         rc = blobfs_file_write(wfile, data, total, size);
                         if (rc != 0) {
                                 fprintf(stderr, "ERR: blobfs write file %s\n", filename);
@@ -109,6 +109,18 @@ writeout:
                 fprintf(stdout, "write 10GB file escaped: %d ms\n", (endTime.time-startTime.time)*1000 + (endTime.millitm - startTime.millitm));
                 unmount_blobfs();
                 exit(0);
+	}
+
+	if (strcmp(argv[4], "read") == 0) } {
+                blobfs_file *wfile = NULL;
+		char *filename = "write_data";
+		char data[size];
+                rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &wfile);
+                if (rc != 0) {
+			fprintf(stderr, "ERR: blobfs open file %s\n", filename);
+			goto readout;
+		}
+
 	}
 
 	if (strcmp(argv[4], "clear") == 0) {

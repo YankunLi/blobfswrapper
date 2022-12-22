@@ -16,6 +16,15 @@ lib:
 	cc -Wl,-z,relro,-z,now -Wl,-z,noexecstack -fuse-ld=bfd -c blobfs_wrapper.c -I ./ 
 	ar -crv libblobfs_wrapper.a blobfs_wrapper.o
 
+clear:
+	./wrapper ./test.json Nvme0n1 4096 clear write_data
+
+write:
+	./wrapper ./test.json Nvme0n1 4096 write
+
+read:
+	./wrapper ./test.json Nvme0n1 4096 read
+
 clean:
 	rm -rf wrapper blobfs_wrapper.o libblobfs_wrapper.a
 .PHONY: wrapper

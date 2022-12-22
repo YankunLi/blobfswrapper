@@ -86,7 +86,7 @@ delout:
 		}
 
 		long long int total;
-		for (total = 0; total < 10 * GB;) {
+		for (total = 0; total < 2 * GB;) {
                         rc = blobfs_file_write(wfile, data, total, size);
                         if (rc != 0) {
                                 fprintf(stderr, "ERR: blobfs write file %s\n", filename);
@@ -111,16 +111,35 @@ writeout:
                 exit(0);
 	}
 
-	if (strcmp(argv[4], "read") == 0) } {
-                blobfs_file *wfile = NULL;
+	if (strcmp(argv[4], "read") == 0) {
+                blobfs_file *rfile = NULL;
 		char *filename = "write_data";
-		char data[size];
-                rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &wfile);
+		char buf[size];
+                rc = blobfs_open_file(filename, SPDK_BLOBFS_OPEN_CREATE, &rfile);
                 if (rc != 0) {
 			fprintf(stderr, "ERR: blobfs open file %s\n", filename);
 			goto readout;
 		}
 
+                int64_t filesize = blobfs_file_get_length(rfile);
+                int64_t offset = 0;
+                uint64_t read_len = 0;
+                do {
+                       read_len = blobfs_file_read(rfile, buf, offset, 4*1024);
+                       fprintf(stdout, "read size: %d read offset: %ld filesize: %ld\n", read_len, offset, filesize);
+                       offset += read_len;
+                } while (filesize != offset);
+                rc = blobfs_file_close(rfile);
+                if (rc != 0) {
+                        fprintf(stderr, "ERR: blobfs close read file %s\n", filename);
+			goto readout;
+                }
+readout:
+
+                ftime(&endTime);
+                fprintf(stdout, "read  %dGB file escaped: %d ms\n", filesize/GB, (endTime.time-startTime.time)*1000 + (endTime.millitm - startTime.millitm));
+                unmount_blobfs();
+                exit(0);
 	}
 
 	if (strcmp(argv[4], "clear") == 0) {

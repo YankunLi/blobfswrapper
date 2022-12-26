@@ -23,7 +23,10 @@ write:
 	./wrapper ./test.json Nvme0n1 4096 write 4
 
 read:
-	./wrapper ./test.json Nvme0n1 4096 read 512
+	./wrapper ./test.json Nvme0n1 4096 read 512 seq
+
+randread:
+	./wrapper ./test.json Nvme0n1 4096 read 4 rand
 
 clean:
 	rm -rf wrapper blobfs_wrapper.o libblobfs_wrapper.a

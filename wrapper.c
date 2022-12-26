@@ -127,7 +127,6 @@ writeout:
                 exit(0);
 	}
 
-	gettimeofday(&startTime, NULL);
 	if (strcmp(argv[4], "read") == 0) {
                 blobfs_file *rfile = NULL;
 		char *filename = "write_data";
@@ -139,16 +138,37 @@ writeout:
 			goto readout;
 		}
 
+	        gettimeofday(&startTime, NULL);
                 uint64_t times = 0;
                 int64_t filesize = blobfs_file_get_length(rfile);
                 int64_t offset = 0;
                 uint64_t read_len = 0;
-                do {
-                       read_len = blobfs_file_read(rfile, buf, offset, 4*1024);
-                       times++;
-                       //fprintf(stdout, "read size: %d read offset: %ld filesize: %ld\n", read_len, offset, filesize);
-                       offset += read_len;
-                } while (filesize != offset);
+                struct timeval interval; // 20s
+                int bench_interval = 0;
+                if (strcmp(argv[6], "seq") == 0) {
+                        do {
+                               read_len = blobfs_file_read(rfile, buf, offset, chunk_size);
+                               times++;
+                               //fprintf(stdout, "read size: %d read offset: %ld filesize: %ld\n", read_len, offset, filesize);
+                               offset += read_len;
+                        } while (filesize != offset);
+                } else {
+                        do {
+                               offset = rand()%(3*GB);
+                //               fprintf(stdout, "offset: %d", offset);
+                               read_len = blobfs_file_read(rfile, buf, offset, chunk_size);
+                               times++;
+                               //fprintf(stdout, "read size: %d read offset: %ld filesize: %ld\n", read_len, offset, filesize);
+                               if (bench_interval > 10000) {
+                                       gettimeofday(&interval, NULL);
+                                       if (interval.tv_sec - startTime.tv_sec > 20) {
+                                         break;
+                                       }
+                                       bench_interval = 0;
+                               }
+                               bench_interval++;
+                        } while (1);
+                }
                 rc = blobfs_file_close(rfile);
                 if (rc != 0) {
                         fprintf(stderr, "ERR: blobfs close read file %s\n", filename);

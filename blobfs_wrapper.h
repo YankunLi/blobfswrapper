@@ -8,9 +8,9 @@
 
 #define EBLOBFS  -128
 #define ENOFS    -129
-#define ENULLPTR -129
-#define EMEM     -130
-#define EARGS    -131
+#define ENULLPTR -130
+#define EMEM     -131
+#define EARGS    -132
 
 typedef struct _blobfs_file {
         struct spdk_file *s_file;
@@ -69,5 +69,7 @@ blobfs_file_name * allocate_file_name();
 void free_blobfs_file_name(blobfs_file_name_ptr list);
 
 int blobfs_list_all_files(blobfs_file_name_ptr *list);
+
+void work_thread_exit(void);
 
 #endif

@@ -18,11 +18,12 @@
 
 #include "blobfs_wrapper.h"
 
-struct spdk_thread *thread;
+__thread struct spdk_thread *thread;
 struct spdk_filesystem *g_fs = NULL;
 struct spdk_bs_dev *g_bs_dev;
 //thread_local struct spdk_fs_thread_ctx *g_sync_channel;
 __thread struct spdk_fs_thread_ctx *g_sync_channel;
+//struct spdk_fs_thread_ctx *g_sync_channel;
 uint32_t g_lcore = 0;
 char* g_bdev_name;
 pthread_t spdktid;
@@ -180,7 +181,7 @@ mount_blobfs(char* spdk_conf, char *spdk_dev_name, uint64_t cache_size_in_mb)
 __attribute__((unused)) static void
 set_channel(void)
 {
-	struct spdk_thread *thread;
+//	struct spdk_thread *thread;
 
 	if (g_fs != NULL && g_sync_channel == NULL) {
 		thread = spdk_thread_create("spdk_blobfs", NULL);
@@ -225,6 +226,12 @@ unmount_blobfs(void)
 	spdk_thread_exit(thread);
 	pthread_join(spdktid, NULL);
 
+        free_spdk_thread_ctx();
+}
+
+void
+work_thread_exit(void) {
+        spdk_thread_exit(thread);
         free_spdk_thread_ctx();
 }
 
@@ -273,6 +280,7 @@ check_fs_and_channel(void)
 int
 blobfs_create_file(char *name)
 {
+        set_channel();
         if (!check_fs_and_channel())
                 return ENOFS;
         if (name == NULL) {
@@ -315,6 +323,7 @@ free_blobfs_file(blobfs_file *file)
 int
 blobfs_open_file(char *name, uint32_t flags, blobfs_file **file)
 {
+        set_channel();
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }
@@ -341,6 +350,7 @@ blobfs_open_file(char *name, uint32_t flags, blobfs_file **file)
 int
 blobfs_file_close(blobfs_file *file)
 {
+        set_channel();
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }
@@ -362,6 +372,7 @@ blobfs_file_close(blobfs_file *file)
 int
 blobfs_delete_file(char *name)
 {
+        set_channel();
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }
@@ -382,6 +393,7 @@ blobfs_delete_file(char *name)
 int
 blobfs_rename_file(char *old_name, char *new_name)
 {
+        set_channel();
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }
@@ -401,6 +413,7 @@ blobfs_rename_file(char *old_name, char *new_name)
 int
 blobfs_file_write(blobfs_file *file, void *payload, uint64_t offset, uint64_t length)
 {
+        set_channel();
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }
@@ -420,6 +433,7 @@ blobfs_file_write(blobfs_file *file, void *payload, uint64_t offset, uint64_t le
 int64_t
 blobfs_file_read(blobfs_file *file, void *payload, uint64_t offset, uint64_t length)
 {
+        set_channel();
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }
@@ -439,6 +453,7 @@ blobfs_file_read(blobfs_file *file, void *payload, uint64_t offset, uint64_t len
 int
 blobfs_file_sync(blobfs_file *file)
 {
+        set_channel();
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }
@@ -485,6 +500,7 @@ void free_blobfs_file_stat(blobfs_file_stat *stat)
 //		      const char *name, struct spdk_file_stat *stat);
 int blobfs_file_stat_f(char *name, blobfs_file_stat *stat)
 {
+        set_channel();
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }
@@ -504,6 +520,7 @@ int blobfs_file_stat_f(char *name, blobfs_file_stat *stat)
 int
 blobfs_file_truncate(blobfs_file *file, uint64_t length)
 {
+        set_channel();
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }
@@ -527,6 +544,7 @@ blobfs_file_truncate(blobfs_file *file, uint64_t length)
 const char *
 blobfs_file_get_name(blobfs_file *file)
 {
+        set_channel();
         if (!check_fs_and_channel()) {
                 return NULL;
         }
@@ -577,6 +595,7 @@ blobfs_file_get_id(blobfs_file *file, void *id, size_t size)
 int
 blobfs_list_all_files(blobfs_file_name_ptr *list)
 {
+        set_channel();
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }

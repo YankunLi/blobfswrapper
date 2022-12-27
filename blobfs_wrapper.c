@@ -141,8 +141,8 @@ spdk_initialize_thread_ctx(void)
 		if (g_sync_channel) {
 			spdk_fs_free_thread_ctx(g_sync_channel);
 		}
-		thread = spdk_thread_create("spdk_blobfs", NULL);
-		spdk_set_thread(thread);
+		//thread = spdk_thread_create("spdk_blobfs", NULL);
+	//	spdk_set_thread(thread);
 		g_sync_channel = spdk_fs_alloc_thread_ctx(g_fs);
 	}
 }
@@ -159,6 +159,7 @@ mount_blobfs(char* spdk_conf, char *spdk_dev_name, uint64_t cache_size_in_mb)
         opts->name = "blobfs";
         opts->json_config_file = spdk_conf;
         opts->shutdown_cb = blobfs_shutdown;
+      //  opts->reactor_mask = "0x5";
 //        opts->tpoint_group_mask = "0x80";
 
         spdk_fs_set_cache_size(cache_size_in_mb);
@@ -184,8 +185,8 @@ set_channel(void)
 //	struct spdk_thread *thread;
 
 	if (g_fs != NULL && g_sync_channel == NULL) {
-		thread = spdk_thread_create("spdk_blobfs", NULL);
-		spdk_set_thread(thread);
+	//	thread = spdk_thread_create("spdk_blobfs", NULL);
+	//	spdk_set_thread(thread);
 		g_sync_channel = spdk_fs_alloc_thread_ctx(g_fs);
 	}
 }
@@ -223,7 +224,7 @@ unmount_blobfs(void)
 	}
 
 	spdk_app_start_shutdown();
-	spdk_thread_exit(thread);
+//	spdk_thread_exit(thread);
 	pthread_join(spdktid, NULL);
 
         free_spdk_thread_ctx();
@@ -231,7 +232,7 @@ unmount_blobfs(void)
 
 void
 work_thread_exit(void) {
-        spdk_thread_exit(thread);
+//        spdk_thread_exit(thread);
         free_spdk_thread_ctx();
 }
 

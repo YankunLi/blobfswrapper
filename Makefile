@@ -17,16 +17,19 @@ lib:
 	ar -crv libblobfs_wrapper.a blobfs_wrapper.o
 
 clear:
-	./wrapper ./test.json Nvme0n1 4096 clear
+	./wrapper ./nvme1.json Nvme1n1 4096 clear
+
+list:
+	./wrapper ./nvme1.json Nvme1n1 4096 list
 
 write:
-	./wrapper ./test.json Nvme0n1 4096 1 seq 8 4
+	./wrapper ./nvme1.json Nvme1n1 4096 seqwrite 2 4
 
-read:
-	./wrapper ./test.json Nvme0n1 4096 read 512 seq
+seqread:
+	./wrapper ./nvme1.json Nvme1n1 4096 seqread 32 512
 
 randread:
-	./wrapper ./test.json Nvme0n1 4096 read 4 rand
+	./wrapper ./nvme1.json Nvme1n1 4096 randread 32 4
 
 clean:
 	rm -rf wrapper blobfs_wrapper.o libblobfs_wrapper.a

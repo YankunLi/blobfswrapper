@@ -23,7 +23,7 @@ list:
 	./wrapper ./nvme1.json Nvme1n1 4096 list
 
 write:
-	./wrapper ./nvme1.json Nvme1n1 4096 seqwrite 2 4
+	./wrapper ./nvme1.json Nvme1n1 4096 seqwrite 32 4
 
 seqread:
 	./wrapper ./nvme1.json Nvme1n1 4096 seqread 32 512

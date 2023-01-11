@@ -10,7 +10,9 @@
 #include "spdk/env.h"
 #include "spdk/event.h"
 #include "spdk/blob.h"
+#include "spdk/bdev_module.h"
 #include "spdk/blobfs.h"
+#include "spdk/blobfs_bdev.h"
 #include "spdk/blob_bdev.h"
 #include "spdk/log.h"
 #include "spdk/thread.h"
@@ -18,11 +20,14 @@
 
 #include "blobfs_wrapper.h"
 
+static struct spdk_bdev_module blobfs_bdev_module = {
+	.name	= "blobfs",
+};
 __thread struct spdk_thread *thread;
 struct spdk_filesystem *g_fs = NULL;
 struct spdk_bs_dev *g_bs_dev;
-//thread_local struct spdk_fs_thread_ctx *g_sync_channel;
 __thread struct spdk_fs_thread_ctx *g_sync_channel;
+//struct spdk_fs_thread_ctx *g_sync_channel;
 //struct spdk_fs_thread_ctx *g_sync_channel;
 uint32_t g_lcore = 0;
 char* g_bdev_name;
@@ -79,7 +84,9 @@ static void
 fs_load_cb(__attribute__((unused)) void *ctx,
 	   struct spdk_filesystem *fs, int fserrno)
 {
+        fprintf(stdout, "fserrno: %d\n", fserrno);
 	if (fserrno == 0) {
+                fprintf(stdout, "set g_fs\n");
 		g_fs = fs;
 	}
 	g_spdk_ready = true;
@@ -98,7 +105,18 @@ blobfs_run(__attribute__((unused)) void *arg1)
 		exit(1);
 	}
 
-	g_lcore = spdk_env_get_first_core();
+	rc = spdk_bs_bdev_claim(g_bs_dev, &blobfs_bdev_module);
+	if (rc != 0) {
+		SPDK_INFOLOG(blobfs_bdev, "Blobfs base bdev already claimed by another bdev\n");
+		g_bs_dev->destroy(g_bs_dev);
+		spdk_app_stop(0);
+		exit(1);
+	}
+	SPDK_INFOLOG(blobfs_bdev, "bdev is claimed for Blobfs\n");
+
+
+
+	//g_lcore = spdk_env_get_first_core();
 
 	printf("using bdev %s\n", g_bdev_name);
 	spdk_fs_load(g_bs_dev, __send_request, fs_load_cb, NULL);
@@ -125,6 +143,7 @@ initialize_spdk(void *arg)
 		spdk_app_fini();
                 free((void *)opts);
 	}
+        pthread_detach(pthread_self());
 	pthread_exit(NULL);
 }
 
@@ -137,12 +156,14 @@ static void
 spdk_initialize_thread_ctx(void)
 {
 
+        fprintf(stdout, "init thread ctx, g_fs: %ld\n", g_fs);
 	if (g_fs != NULL) {
 		if (g_sync_channel) {
 			spdk_fs_free_thread_ctx(g_sync_channel);
 		}
-		//thread = spdk_thread_create("spdk_blobfs", NULL);
-	//	spdk_set_thread(thread);
+       // 	thread = spdk_thread_create("spdk_blobfs", NULL);
+       // 	spdk_set_thread(thread);
+                fprintf(stdout, "alloc thread ctx\n");
 		g_sync_channel = spdk_fs_alloc_thread_ctx(g_fs);
 	}
 }
@@ -150,6 +171,7 @@ spdk_initialize_thread_ctx(void)
 int
 mount_blobfs(char* spdk_conf, char *spdk_dev_name, uint64_t cache_size_in_mb)
 {
+        fprintf(stdout, "conf %s name: %s cache: %d\n", spdk_conf, spdk_dev_name, cache_size_in_mb);
         struct spdk_app_opts *opts = (struct spdk_app_opts *) malloc(sizeof(struct spdk_app_opts));
         if (opts == NULL) {
                 return -1;
@@ -159,9 +181,10 @@ mount_blobfs(char* spdk_conf, char *spdk_dev_name, uint64_t cache_size_in_mb)
         opts->name = "blobfs";
         opts->json_config_file = spdk_conf;
         opts->shutdown_cb = blobfs_shutdown;
-      //  opts->reactor_mask = "0x5";
+//        opts->reactor_mask = "0x3";
 //        opts->tpoint_group_mask = "0x80";
 
+        fprintf(stdout, "fs cache size: %d mb", cache_size_in_mb);
         spdk_fs_set_cache_size(cache_size_in_mb);
         g_bdev_name = spdk_dev_name;
 
@@ -173,6 +196,7 @@ mount_blobfs(char* spdk_conf, char *spdk_dev_name, uint64_t cache_size_in_mb)
           return -1;
         }
 
+        fprintf(stdout, "to init ctx\n");
         spdk_initialize_thread_ctx();
 
         return 0;
@@ -185,8 +209,9 @@ set_channel(void)
 //	struct spdk_thread *thread;
 
 	if (g_fs != NULL && g_sync_channel == NULL) {
-	//	thread = spdk_thread_create("spdk_blobfs", NULL);
-	//	spdk_set_thread(thread);
+                fprintf(stdout, "To allocate channel(%ld) for pthread %ld spdk thread %ld\n", &g_sync_channel, pthread_self(), &thread);
+	       // thread = spdk_thread_create("spdk_blobfs", NULL);
+	       // spdk_set_thread(thread);
 		g_sync_channel = spdk_fs_alloc_thread_ctx(g_fs);
 	}
 }
@@ -232,8 +257,8 @@ unmount_blobfs(void)
 
 void
 work_thread_exit(void) {
-//        spdk_thread_exit(thread);
-        free_spdk_thread_ctx();
+        //spdk_thread_exit(thread);
+        //free_spdk_thread_ctx();
 }
 
 blobfs_file_name *
@@ -269,6 +294,10 @@ free_blobfs_file_name(blobfs_file_name_ptr list)
 static bool
 check_fs_and_channel(void)
 {
+  if ( g_sync_channel == NULL )
+    fprintf(stderr, "channel null\n");
+  if (g_fs == NULL)
+    fprintf(stderr, "fs null\n");
   if (g_fs == NULL || g_sync_channel == NULL) {
           return false;
   }
@@ -411,6 +440,8 @@ blobfs_rename_file(char *old_name, char *new_name)
 
 //int spdk_file_write(struct spdk_file *file, struct spdk_fs_thread_ctx *ctx,
 //		    void *payload, uint64_t offset, uint64_t length);
+__thread pthread_t pid = 0;
+__thread struct spdk_fs_thread_ctx ** addr = 0;
 int
 blobfs_file_write(blobfs_file *file, void *payload, uint64_t offset, uint64_t length)
 {
@@ -418,10 +449,23 @@ blobfs_file_write(blobfs_file *file, void *payload, uint64_t offset, uint64_t le
         if (!check_fs_and_channel()) {
                 return ENOFS;
         }
+        if (file == NULL)
+                return -1;
+        if (file->s_file == NULL)
+                return -2;
+        if (payload == NULL)
+                return -3;
         if (file == NULL || file->s_file == NULL || payload == NULL)
                 return ENULLPTR;
 
         int rc;
+        if (pid == 0 || addr == 0) {
+                pid = pthread_self();
+                addr = &g_sync_channel;
+        }
+        if (pid != pthread_self() || &g_sync_channel != addr) {
+                fprintf(stderr, "ERR: pthread id: %lu channel addr: %d", pthread_self(), &g_sync_channel);
+        }
         rc = spdk_file_write(file->s_file, g_sync_channel, payload, offset, length);
         if (rc != 0)
                 return EBLOBFS;

@@ -1,0 +1,31 @@
+{
+"subsystems": [
+{
+"subsystem": "bdev",
+"config": [
+{
+"method": "bdev_nvme_attach_controller",
+"params": {
+"trtype": "PCIe",
+"name":"Nvme0",
+"traddr":"0000:87:00.0"
+}
+},{
+"method": "bdev_nvme_attach_controller",
+"params": {
+"trtype": "PCIe",
+"name":"Nvme1",
+"traddr":"0000:88:00.0"
+}
+},{
+"method": "bdev_nvme_attach_controller",
+"params": {
+"trtype": "PCIe",
+"name":"Nvme2",
+"traddr":"0000:89:00.0"
+}
+}
+]
+}
+]
+}

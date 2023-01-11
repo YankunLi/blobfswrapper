@@ -2,10 +2,14 @@
  * Email : liyankun01@58.com,lioveni99@gmail.com
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <blobfs_wrapper.h>
 #include <sys/timeb.h>
 #include <sys/time.h>
+//#include <pthread.h>
+//#include <unistd.h>
+//#include <sched.h>
 
 #define US 1L
 #define MS (1000*US)
@@ -23,6 +27,7 @@ struct ctxval {
   uint64_t benchsize; //unit GB
   uint64_t times;
   int      ret;
+  int      core;
   void (*exit)(void);
 };
 
@@ -31,6 +36,14 @@ enum OP {
 };
 
 void *benchwrite(void *val) {
+       // cpu_set_t mask;
+       // CPU_ZERO(&mask);
+       // CPU_SET(1, &mask); //指定该线程使用的CPU
+       // if (pthread_setaffinity_np(pthread_self(), sizeof(mask), &mask) < 0) {
+       //         perror("pthread_setaffinity_np");
+       //         goto exit;
+       // }
+
         struct ctxval *ctx = (struct ctxval *) val;
         blobfs_file *wfile = NULL;
 	char *filename = ctx->filename;
@@ -66,7 +79,11 @@ void *benchwrite(void *val) {
                         fprintf(stderr, "ERR: blobfs sync file %s\n", filename);
                         ctx->ret = -1;
                         goto exit;
-		}
+	        }
+                if (ctx->core == 1) {
+                  fprintf(stdout, "writed size: %f\n", 0.1*total/bench_size *100);
+                }
+                usleep(800);
 	}
         rc = blobfs_file_close(wfile);
         if (rc != 0) {
@@ -80,6 +97,7 @@ exit:
         if (ctx->exit != NULL) {
           ctx->exit();
         }
+        pthread_exit(NULL);
         return NULL;
 }
 
@@ -138,6 +156,10 @@ void *benchread(void *val) {
         ctx->times = times;
 readout:
         free((void*)buf);
+        if (ctx->exit != NULL) {
+          ctx->exit();
+        }
+        pthread_exit(NULL);
 }
 void benchctrl(char * mode, uint64_t chunksize, int threads) {
       //threads += 10+10+10;
@@ -150,9 +172,11 @@ void benchctrl(char * mode, uint64_t chunksize, int threads) {
 	      ctxs[idx].filename = (char *) malloc(125);
               sprintf(ctxs[idx].filename, "%s%d", prefix, idx);
               ctxs[idx].chunksize = chunksize * KB;
-              ctxs[idx].benchsize = bench_size * GB;
-              ctxs[idx].exit = NULL; //work_thread_exit;
+              ctxs[idx].benchsize = bench_size * MB;
+              //ctxs[idx].exit = NULL; //work_thread_exit;
+              ctxs[idx].exit = work_thread_exit;
               ctxs[idx].mode = mode;
+              ctxs[idx].core = 1 + idx;
       }
       int rc = 0;
       void* (*work)(void*val);
@@ -214,6 +238,8 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
+        fprintf(stdout, "conf: %s bdev %s cache: %s mode: %s threads: %s chunk size: %s\n",
+            argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
         uint64_t cache_size = (uint64_t) atoi(argv[3]);
         int rc;
         rc = mount_blobfs(argv[1], argv[2], cache_size);
@@ -385,6 +411,8 @@ readout:
 	}
 
 	if (strcmp(argv[4], "list") == 0) {
+               blobfs_file_stat *file_stat;
+               allocate_blobfs_file_stat(&file_stat);
                 blobfs_file_name *all_files = NULL;
                 rc = blobfs_list_all_files(&all_files);
                 if (rc != 0) {
@@ -394,7 +422,8 @@ readout:
                 blobfs_file_name_ptr it = all_files;
                 fprintf(stdout, "blobfs: files:\n");
                 while(it != NULL) {
-                        fprintf(stdout, "To clear file %s\n", it->name);
+                        blobfs_file_stat_f(it->name, file_stat);
+                        fprintf(stdout, "file: %s  size: %ld \n", it->name, file_stat->s_size);
                         it = it->next;
                 }
                 free_blobfs_file_name(all_files);
@@ -407,25 +436,26 @@ readout:
                 blobfs_file_name *all_files = NULL;
                 rc = blobfs_list_all_files(&all_files);
                 if (rc != 0) {
-                        fprintf(stderr, "ERR: blobfs list all file \n");
-                        goto clean;
+                        fprintf(stderr, "ERR: blobfs list all file. rc: %d\n", rc);
+                        exit(-1);
                 }
                 blobfs_file_name_ptr it = all_files;
                 fprintf(stdout, "blobfs: files:\n");
-                int id = 20;
-                for (;id<32;id++) {
-		char *name = (char *) malloc(125);
-		char *prefix =  "testfilename-";
-              sprintf(name, "%s%d", prefix, id);
-              blobfs_delete_file(name);
-                }
+                int id = 0;
+              //  for (;id<57;id++) {
+	      //          char *name = (char *) malloc(125);
+	      //          char *prefix =  "testfilename-";
+              //          sprintf(name, "%s%d", prefix, id);
+              //          fprintf(stdout, "To clear file %s\n", name);
+              //          blobfs_delete_file(name);
+              //  }
                 while(it != NULL) {
                         fprintf(stdout, "To clear file %s\n", it->name);
-               //         rc = blobfs_delete_file(it->name);
-                //        if (rc != 0) {
-                 //               fprintf(stderr, "ERR: blobfs delete file %s\n", argv[5]);
-		//	        exit(-1);
-                   //     }
+                        rc = blobfs_delete_file(it->name);
+                        if (rc != 0) {
+                                fprintf(stderr, "ERR: blobfs delete file %d\n", rc);
+			        exit(-1);
+                        }
                         it = it->next;
                 }
                 free_blobfs_file_name(all_files);

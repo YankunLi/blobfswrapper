@@ -20,7 +20,7 @@ extern "C" {
 #include "spdk/bdev.h"
 }
 uint32_t chunk_size = 4*1024;
-uint64_t bench_size = uint64_t(1024)*1024*BENCH_SIZE;
+uint64_t bench_size = uint64_t(1024)*1024*BENCH_SIZE*1024;
 
 struct spdk_filesystem *g_fs = NULL;
 struct spdk_bs_dev *g_bs_dev;

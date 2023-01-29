@@ -105,18 +105,18 @@ blobfs_run(__attribute__((unused)) void *arg1)
 		exit(1);
 	}
 
-	rc = spdk_bs_bdev_claim(g_bs_dev, &blobfs_bdev_module);
-	if (rc != 0) {
-		SPDK_INFOLOG(blobfs_bdev, "Blobfs base bdev already claimed by another bdev\n");
-		g_bs_dev->destroy(g_bs_dev);
-		spdk_app_stop(0);
-		exit(1);
-	}
-	SPDK_INFOLOG(blobfs_bdev, "bdev is claimed for Blobfs\n");
+//	rc = spdk_bs_bdev_claim(g_bs_dev, &blobfs_bdev_module);
+//	if (rc != 0) {
+//		SPDK_INFOLOG(blobfs_bdev, "Blobfs base bdev already claimed by another bdev\n");
+//		g_bs_dev->destroy(g_bs_dev);
+//		spdk_app_stop(0);
+//		exit(1);
+//	}
+//	SPDK_INFOLOG(blobfs_bdev, "bdev is claimed for Blobfs\n");
 
 
 
-	//g_lcore = spdk_env_get_first_core();
+	g_lcore = spdk_env_get_first_core();
 
 	printf("using bdev %s\n", g_bdev_name);
 	spdk_fs_load(g_bs_dev, __send_request, fs_load_cb, NULL);
@@ -143,7 +143,6 @@ initialize_spdk(void *arg)
 		spdk_app_fini();
                 free((void *)opts);
 	}
-        pthread_detach(pthread_self());
 	pthread_exit(NULL);
 }
 
@@ -161,8 +160,6 @@ spdk_initialize_thread_ctx(void)
 		if (g_sync_channel) {
 			spdk_fs_free_thread_ctx(g_sync_channel);
 		}
-       // 	thread = spdk_thread_create("spdk_blobfs", NULL);
-       // 	spdk_set_thread(thread);
                 fprintf(stdout, "alloc thread ctx\n");
 		g_sync_channel = spdk_fs_alloc_thread_ctx(g_fs);
 	}
@@ -181,8 +178,7 @@ mount_blobfs(char* spdk_conf, char *spdk_dev_name, uint64_t cache_size_in_mb)
         opts->name = "blobfs";
         opts->json_config_file = spdk_conf;
         opts->shutdown_cb = blobfs_shutdown;
-//        opts->reactor_mask = "0x3";
-//        opts->tpoint_group_mask = "0x80";
+        opts->tpoint_group_mask = "0x80";
 
         fprintf(stdout, "fs cache size: %d mb", cache_size_in_mb);
         spdk_fs_set_cache_size(cache_size_in_mb);

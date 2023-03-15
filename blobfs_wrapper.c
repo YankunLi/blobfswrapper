@@ -107,12 +107,12 @@ blobfs_run(__attribute__((unused)) void *arg1)
 
 	rc = spdk_bs_bdev_claim(g_bs_dev, &blobfs_bdev_module);
 	if (rc != 0) {
-		SPDK_INFOLOG(blobfs_bdev, "Blobfs base bdev already claimed by another bdev\n");
+//		SPDK_INFOLOG(blobfs_bdev, "Blobfs base bdev already claimed by another bdev\n");
 		g_bs_dev->destroy(g_bs_dev);
 		spdk_app_stop(0);
 		exit(1);
 	}
-	SPDK_INFOLOG(blobfs_bdev, "bdev is claimed for Blobfs\n");
+//	SPDK_INFOLOG(blobfs_bdev, "bdev is claimed for Blobfs\n");
 
 
 

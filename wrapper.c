@@ -10,6 +10,7 @@
 //#include <pthread.h>
 //#include <unistd.h>
 //#include <sched.h>
+#include "spdk/thread.h"
 
 #define US 1L
 #define MS (1000*US)
@@ -35,6 +36,7 @@ enum OP {
   WRITE=1, READ, CLEAR
 };
 
+
 void *benchwrite(void *val) {
        // cpu_set_t mask;
        // CPU_ZERO(&mask);
@@ -43,8 +45,11 @@ void *benchwrite(void *val) {
        //         perror("pthread_setaffinity_np");
        //         goto exit;
        // }
-
         struct ctxval *ctx = (struct ctxval *) val;
+      //  struct spdk_thread *thread;
+      //  	thread = spdk_thread_create(ctx->filename, NULL);
+      //  	spdk_set_thread(thread);
+
         blobfs_file *wfile = NULL;
 	char *filename = ctx->filename;
         //fprintf(stdout, "filename: %s\n", filename);
@@ -81,9 +86,9 @@ void *benchwrite(void *val) {
                         goto exit;
 	        }
                 if (ctx->core == 1) {
-                  fprintf(stdout, "writed size: %f\n", 0.1*total/bench_size *100);
+                //  fprintf(stdout, "writed size: %f\n", 0.1*total/bench_size *100);
                 }
-                usleep(800);
+                //usleep(1500);
 	}
         rc = blobfs_file_close(wfile);
         if (rc != 0) {
@@ -97,6 +102,7 @@ exit:
         if (ctx->exit != NULL) {
           ctx->exit();
         }
+      //  spdk_thread_exit(thread);
         pthread_exit(NULL);
         return NULL;
 }
@@ -172,7 +178,7 @@ void benchctrl(char * mode, uint64_t chunksize, int threads) {
 	      ctxs[idx].filename = (char *) malloc(125);
               sprintf(ctxs[idx].filename, "%s%d", prefix, idx);
               ctxs[idx].chunksize = chunksize * KB;
-              ctxs[idx].benchsize = bench_size * MB;
+              ctxs[idx].benchsize = bench_size * GB;
               //ctxs[idx].exit = NULL; //work_thread_exit;
               ctxs[idx].exit = work_thread_exit;
               ctxs[idx].mode = mode;

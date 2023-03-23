@@ -80,9 +80,9 @@ void *benchwrite(void *val) {
                         ctx->ret = -1;
                         goto exit;
 	        }
-                if (ctx->core == 1) {
+                //if (ctx->core == 1) {
                  // fprintf(stdout, "writed size: %f\n", 0.1*total/bench_size *100);
-                }
+               // }
                 //usleep(2500);
 	}
         rc = blobfs_file_close(wfile);
@@ -173,8 +173,8 @@ void benchctrl(char * mode, uint64_t chunksize, int threads) {
               sprintf(ctxs[idx].filename, "%s%d", prefix, idx);
               ctxs[idx].chunksize = chunksize * KB;
               ctxs[idx].benchsize = bench_size * GB;
-              //ctxs[idx].exit = NULL; //work_thread_exit;
-              ctxs[idx].exit = work_thread_exit;
+              ctxs[idx].exit = NULL; //work_thread_exit;
+          //    ctxs[idx].exit = work_thread_exit;
               ctxs[idx].mode = mode;
               ctxs[idx].core = 1 + idx;
       }
